@@ -46,6 +46,14 @@ tweets_data = tweets_dict['data']
 # Transform to pandas Dataframe
 df = pd.json_normalize(tweets_data)
 
+# Select Data From Twitter
+df = df[['id','text','created_at','author_id']]
+
+# Convert Types
+df['id'] = df['id'].astype(float)
+df['text'] = df['text'].astype(str)
+df['created_at'] = pd.to_datetime(df['created_at'], infer_datetime_format=True)
+df['author_id'] = df['author_id'].astype(int)
 
 # Connect With Postgre
 
@@ -57,12 +65,20 @@ conn = psycopg2.connect(
    port= port_pg
 )
 
-#Setting auto commit false
-conn.autocommit = True
-
-#Creating a cursor object using the cursor() method
-cursor = conn.cursor()
-
-# Preparing SQL queries to INSERT a record into the database.
-cursor.execute('''INSERT INTO TWEETS (id, text, created_at, author_id) VALUES 
-    (1593007513523585025, '@WholeMarsBlog Yep', '2022-11-16T22:17:42', 44196397)''')
+def update_data(conection,data):
+    #Setting auto commit false
+    conection.autocommit = True
+    
+    #Creating a cursor object using the cursor() method
+    cursor = conection.cursor()
+    
+    tuple_of_tuples = tuple([(tuple(x)) for x in data.values])
+    
+    query = """
+        INSERT INTO TWEETS VALUES ("""+ str('%s,'*data.shape[1])[:-1] + """)"""
+    
+    cursor.executemany(query,tuple_of_tuples)
+    print("Update Twitter Data")
+    return
+  
+#update_data(conn,df)
